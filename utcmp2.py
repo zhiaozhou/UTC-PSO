@@ -177,8 +177,13 @@ def update_particle(currParticle, localBest, globalBest,currVelocity):
 	print outParticle
 	return outParticle
 
+####################################################################
+def get_num_vehicles(routefile):
+        tree =etree.parse(routefile)
+        root =tree.getroot()
+        return len(root)
 ###################################################################
-def get_fitness(outputfile):
+def get_fitness(num_vehs,outputfile):
         print "parsing "+ outputfile
 	tree =etree.parse(outputfile)
 	"""
@@ -191,7 +196,9 @@ def get_fitness(outputfile):
 	tot_time =0
 	for i in root:
 		tot_time +=float(i.attrib["duration"])
-	return (tot_time, len(root))
+	num_reach =len(root)
+	FI =(tot_time + (num_veh-num_reach)*1200.0)/(num_veh)**2
+	return (FI, num_reach)
 ########################################################################################
 def run_one_simulation(config_num =8813, steps =1200):
 	PORT = config_num +8810
@@ -235,7 +242,7 @@ for i in range(0,15):
         db[str(i)]=""
 db.close()
 ##########################################################################################################################
-def each_iteration(network,outputfile,k,v,cmn_current_particle_list,cmn_best_particle_values,cmn_best_particle_list,lock):
+def each_iteration(num_vehs,network,outputfile,k,v,cmn_current_particle_list,cmn_best_particle_values,cmn_best_particle_list,lock):
     
  
     update_networkfile(network, cmn_current_particle_list[k])
@@ -247,7 +254,7 @@ def each_iteration(network,outputfile,k,v,cmn_current_particle_list,cmn_best_par
 
 
     try:
-        fitness =get_fitness(outputfile)[1]
+        fitness =get_fitness(num_vehs,outputfile)[1]
     except:
         fitness =-10
     
@@ -334,6 +341,9 @@ def run_full_simulation(network, outputfile,swarmSize, iterations=50):
 
         global failures
         global best_val
+
+        #num_vehs =get_num_vehicles(routefile)
+        num_vehs =2400.0
         
 	noofupdates =0
 	updatesat =[]
@@ -382,7 +392,7 @@ def run_full_simulation(network, outputfile,swarmSize, iterations=50):
 			for k in range(0,len(current_particle_list)):#updating before a new iteration.
 				cmn_current_particle_list[k]=update_particle(cmn_current_particle_list[k],cmn_best_particle_list[k],
 					cmn_global_best_particle,curr_velocity_list[k])
-			processes =[mp.Process(target=each_iteration, args=("network"+str(k)+".xml","output"+str(k)+".xml", k,v,cmn_current_particle_list,cmn_best_particle_values,cmn_best_particle_list,lock)) for k in range(len(current_particle_list))]
+			processes =[mp.Process(target=each_iteration, args=(num_vehs,"network"+str(k)+".xml","output"+str(k)+".xml", k,v,cmn_current_particle_list,cmn_best_particle_values,cmn_best_particle_list,lock)) for k in range(len(current_particle_list))]
 			for p in processes:
 				p.start()
 			for p in processes:
@@ -414,7 +424,7 @@ def run_full_simulation(network, outputfile,swarmSize, iterations=50):
         # Stores test_results in a database"
 	db =anydbm.open("atc_pso_test_results.db", "c")
 	avalue =pickle.dumps(fitness_plotter)
-	akey ="S"+str(swarmSize)+"I"+str(iterations)
+	akey ="SS"+str(swarmSize)+"I"+str(iterations)
 	db[akey]=avalue
 	db.close()
 
@@ -429,7 +439,7 @@ def run_full_simulation(network, outputfile,swarmSize, iterations=50):
 
 ###########################################################################################################################################################
 if __name__ =="__main__":
-        run_full_simulation("/home/venu/utcpso/UTC-PSO/33_4l.net.xml","/home/venu/utcpso/UTC-PSO/33_4l.summary.xml",15,200)
+        run_full_simulation("/home/venu/utcpso/UTC-PSO/33_4l.net.xml","/home/venu/utcpso/UTC-PSO/33_4l.summary.xml",15,20)
 #############################################################################################################################
 ###################################################### THE END ########################################################
 
