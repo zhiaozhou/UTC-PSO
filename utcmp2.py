@@ -12,7 +12,6 @@ import xml.etree.ElementTree as etree
 import time
 import datetime
 import matplotlib.pyplot as plt
-import threading
 import multiprocessing as mp
 
 sys.path.append("/usr/local/src/sumo-0.27.0/tools") # Computer Specific.
